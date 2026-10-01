@@ -13,6 +13,7 @@ from app.schemas.moderator_report import (
     ModeratorReportSummary,
     ModeratorStatusUpdateView,
     StatusUpdateRequest,
+    CloseReportRequest,
 )
 
 PAGE_SIZE_DEFAULT = 20
@@ -21,6 +22,18 @@ PAGE_SIZE_MAX = 100
 
 def _to_str(val) -> str:
     return val.value if isinstance(val, ReportStatus) else str(val)
+
+
+def _get_report(db: Session, report_id: UUID) -> Report:
+    report = db.get(Report, report_id)
+
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found",
+        )
+
+    return report
 
 
 def _build_detail(report: Report) -> ModeratorReportDetail:
@@ -34,11 +47,11 @@ def _build_detail(report: Report) -> ModeratorReportDetail:
         updated_at=report.updated_at,
         updates=[
             ModeratorStatusUpdateView(
-                status=_to_str(u.status),
-                note=u.note,
-                created_at=u.created_at,
+                status=_to_str(update.status),
+                note=update.note,
+                created_at=update.created_at,
             )
-            for u in report.status_updates
+            for update in report.status_updates
         ],
     )
 
@@ -58,25 +71,28 @@ def list_reports(
 
     if status_filter:
         try:
-            s = ReportStatus(status_filter.upper())
+            report_status = ReportStatus(status_filter.upper())
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Invalid status filter: {status_filter}",
             )
-        query = query.filter(Report.status == s)
+
+        query = query.filter(Report.status == report_status)
 
     if category_filter:
         query = query.filter(Report.category.ilike(category_filter))
 
     if search_filter:
         search_pattern = f"%{search_filter}%"
+
         query = query.filter(
-            (Report.description.ilike(search_pattern)) | 
-            (Report.category.ilike(search_pattern))
+            (Report.description.ilike(search_pattern))
+            | (Report.category.ilike(search_pattern))
         )
 
     total = query.count()
+
     reports = (
         query.order_by(Report.created_at.desc())
         .offset((page - 1) * page_size)
@@ -90,47 +106,56 @@ def list_reports(
         page_size=page_size,
         results=[
             ModeratorReportSummary(
-                id=r.id,
-                category=r.category,
-                status=_to_str(r.status),
-                created_at=r.created_at,
-                updated_at=r.updated_at,
+                id=report.id,
+                category=report.category,
+                status=_to_str(report.status),
+                created_at=report.created_at,
+                updated_at=report.updated_at,
             )
-            for r in reports
+            for report in reports
         ],
     )
 
 
-def get_report_detail(db: Session, report_id: UUID) -> ModeratorReportDetail:
-    report = db.query(Report).filter(Report.id == report_id).first()
-    if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+def get_report_detail(
+    db: Session,
+    report_id: UUID,
+) -> ModeratorReportDetail:
+    report = _get_report(db, report_id)
     return _build_detail(report)
 
 
 def update_report_status(
-    db: Session, report_id: UUID, update: StatusUpdateRequest
+    db: Session,
+    report_id: UUID,
+    update: StatusUpdateRequest,
 ) -> ModeratorReportDetail:
-    report = db.query(Report).filter(Report.id == report_id).first()
-    if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    report = _get_report(db, report_id)
 
-    current = report.status if isinstance(report.status, ReportStatus) else ReportStatus(report.status)
+    current = (
+        report.status
+        if isinstance(report.status, ReportStatus)
+        else ReportStatus(report.status)
+    )
+
     if current == ReportStatus.CLOSED:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Report is permanently closed and cannot be modified."
+            detail="Report is permanently closed and cannot be modified.",
         )
 
     new_status = update.status
 
     allowed = ALLOWED_TRANSITIONS.get(current, set())
+
     if new_status not in allowed:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
-                f"Transition from {current.value} to {new_status.value} is not allowed. "
-                f"Allowed transitions: {[s.value for s in allowed] or 'none'}"
+                f"Transition from {current.value} to {new_status.value} "
+                f"is not allowed. "
+                f"Allowed transitions: "
+                f"{[item.value for item in allowed] or 'none'}"
             ),
         )
 
@@ -142,42 +167,63 @@ def update_report_status(
         status=new_status,
         note=update.note,
     )
+
     db.add(status_update)
-    db.commit()
-    db.refresh(report)
+
+    try:
+        db.commit()
+        db.refresh(report)
+    except Exception:
+        db.rollback()
+        raise
 
     return _build_detail(report)
 
 
 def close_report(
-    db: Session, report_id: UUID, note: str
+    db: Session,
+    report_id: UUID,
+    note: str,
 ) -> ModeratorReportDetail:
-    report = db.query(Report).filter(Report.id == report_id).first()
-    if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-        
-    current = report.status if isinstance(report.status, ReportStatus) else ReportStatus(report.status)
+    report = _get_report(db, report_id)
+
+    current = (
+        report.status
+        if isinstance(report.status, ReportStatus)
+        else ReportStatus(report.status)
+    )
+
     if current == ReportStatus.CLOSED:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Report is already closed."
+            detail="Report is already closed.",
         )
-        
-    if current not in (ReportStatus.RESOLVED, ReportStatus.DISMISSED):
+
+    if current not in (
+        ReportStatus.RESOLVED,
+        ReportStatus.DISMISSED,
+    ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Only RESOLVED or DISMISSED reports can be permanently closed."
+            detail="Only RESOLVED or DISMISSED reports can be permanently closed.",
         )
 
     report.status = ReportStatus.CLOSED
     report.updated_at = datetime.now(timezone.utc)
-    
+
     status_update = StatusUpdate(
         report_id=report.id,
         status=ReportStatus.CLOSED,
         note=note,
     )
+
     db.add(status_update)
-    db.commit()
-    db.refresh(report)
+
+    try:
+        db.commit()
+        db.refresh(report)
+    except Exception:
+        db.rollback()
+        raise
+
     return _build_detail(report)
