@@ -1,13 +1,13 @@
 # WhistleDrop — Confidential Reporting Backend
 
-WhistleDrop is a **backend-only anonymous reporting system** designed to allow whistleblowers to submit confidential reports and track their progress without creating an account or directly identifying themselves.
+WhistleDrop is a **backend-only anonymous reporting system** designed to allow whistleblowers to submit confidential reports and track their progress without creating an account or providing identifying information.
 
-The system provides two roles:
+The system provides two separate workflows:
 
-* **Whistleblower** — submits and tracks reports anonymously using a secure case code.
-* **Moderator** — authenticates using JWT and manages submitted reports through a controlled status workflow.
+* **Whistleblower workflow:** Submit and track an anonymous report using a secure case code.
+* **Moderator workflow:** Authenticate using JWT and review, update, resolve, dismiss, and permanently close reports.
 
-> **Scope:** WhistleDrop is a backend/API project. No frontend or UI is required.
+> **Note:** WhistleDrop is a backend/API project. No frontend or UI application is required.
 
 ---
 
@@ -15,100 +15,113 @@ The system provides two roles:
 
 ### Anonymous Reporting
 
-* No user account is required to submit a report.
-* No email address is required.
-* Reports do not store reporter IP addresses or browser fingerprints.
-* Each report receives a randomly generated case code.
-* The plaintext case code is returned to the whistleblower after submission.
+* Submit reports without creating an account.
+* No reporter profile is required.
+* Reports contain:
 
-### Secure Case-Code Tracking
+  * Category
+  * Description
+  * Optional evidence URL
+* A cryptographically random case code is generated when a report is submitted.
+* The plaintext case code is returned to the reporter when the report is created.
+* The backend stores only a SHA-256 hash of the case code.
 
-The plaintext case code is **not stored in the database**.
+### Anonymous Report Tracking
 
-Instead:
+A reporter can track their report using the plaintext case code:
 
-1. A cryptographically random case code is generated.
-2. The plaintext code is returned to the whistleblower.
-3. The backend calculates a SHA-256 hash of the case code.
-4. Only the hash is stored in the database.
-5. When tracking a report, the supplied case code is hashed and compared with the stored hash.
+```text
+GET /reports/track/{case_code}
+```
 
-This means the database does not contain the plaintext tracking code.
+The tracking endpoint returns:
+
+* Current report status
+* Report creation time
+* Last update time
+* Status update history
+
+Invalid or unknown case codes return a generic `404 Not Found` response so that the API does not reveal whether a particular report exists.
 
 ### Moderator Authentication
 
-Moderator endpoints are protected using:
+Moderators authenticate through:
 
-* JWT access tokens
-* Bearer authentication
-* Password hashing with bcrypt
-* Rate limiting on the login endpoint
-* Timing-attack mitigation during username verification
+```text
+POST /moderator/login
+```
 
-### Report Lifecycle
+Successful authentication returns a JWT access token.
 
-Reports follow a controlled state machine:
+Protected moderator endpoints require:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+### Moderator Report Management
+
+Authenticated moderators can:
+
+* List reports
+* Filter reports by status
+* Filter reports by category
+* Search reports
+* Paginate results
+* View individual reports
+* View status history
+* Update report status
+* Resolve reports
+* Dismiss reports
+* Permanently close reports
+
+### Report State Machine
+
+Reports follow a controlled lifecycle:
 
 ```text
 SUBMITTED
-    |
-    v
+    │
+    ▼
 UNDER_REVIEW
-   / \
-  v   v
-RESOLVED  DISMISSED
-   \       /
-    v     v
-      CLOSED
+    │
+    ├──────────────► RESOLVED
+    │
+    └──────────────► DISMISSED
+                         │
+                         ▼
+                       CLOSED
 ```
 
 Once a report reaches `CLOSED`, it cannot be modified or reopened.
 
-### Status History
-
-Every status transition is recorded with:
-
-* Status
-* Moderator note
-* Timestamp
-
-This provides a complete history of the report's lifecycle.
-
-### Anti-Enumeration Protection
-
-The tracking endpoint does not reveal whether an invalid case code partially matches or exists.
-
-Unknown or invalid case codes return a generic:
+Attempts to modify a closed report return:
 
 ```text
-404 Not Found
+409 Conflict
 ```
-
-### Rate Limiting
-
-The API uses `slowapi` to limit sensitive endpoints and reduce brute-force attempts.
 
 ---
 
 # Technology Stack
 
-| Component           | Technology          |
-| ------------------- | ------------------- |
-| Language            | Python 3.9+         |
-| API Framework       | FastAPI             |
-| ASGI Server         | Uvicorn             |
-| Database            | PostgreSQL          |
-| Cloud Database      | Supabase PostgreSQL |
-| ORM                 | SQLAlchemy          |
-| Database Migrations | Alembic             |
-| Authentication      | JWT                 |
-| Password Hashing    | bcrypt              |
-| Rate Limiting       | SlowAPI             |
-| API Documentation   | Swagger UI / ReDoc  |
+* **Python 3.9+**
+* **FastAPI**
+* **Uvicorn**
+* **SQLAlchemy**
+* **PostgreSQL**
+* **Supabase** as the PostgreSQL database provider
+* **Alembic** for database migrations
+* **JWT** for moderator authentication
+* **bcrypt** for password hashing
+* **SlowAPI** for rate limiting
+* **Pydantic** for request/response validation
 
 ---
 
 # Project Structure
+
+The project follows a modular backend architecture similar to:
 
 ```text
 WhistleDrop/
@@ -131,26 +144,22 @@ WhistleDrop/
 │   │   │   └── moderator.py
 │   │   │
 │   │   ├── schemas/
-│   │   │   ├── report.py
 │   │   │   ├── moderator.py
-│   │   │   └── moderator_report.py
+│   │   │   ├── moderator_report.py
+│   │   │   └── ...
 │   │   │
 │   │   ├── services/
-│   │   │   ├── report_service.py
 │   │   │   ├── moderator_service.py
-│   │   │   └── moderator_report_service.py
+│   │   │   ├── moderator_report_service.py
+│   │   │   └── ...
 │   │   │
 │   │   └── main.py
 │   │
 │   ├── alembic/
-│   │   ├── versions/
-│   │   └── env.py
-│   │
-│   ├── seed_moderator.py
 │   ├── requirements.txt
-│   ├── alembic.ini
+│   ├── seed_moderator.py
 │   ├── .env
-│   └── .env.example
+│   └── ...
 │
 └── README.md
 ```
@@ -162,41 +171,34 @@ WhistleDrop/
 Before running the project, install:
 
 * Python 3.9 or newer
-* PostgreSQL database
-* A PostgreSQL-compatible database such as Supabase
+* PostgreSQL-compatible database
 * Git
+* A configured `.env` file
+
+Supabase can be used as the PostgreSQL database provider.
 
 ---
 
 # Environment Variables
 
-Create a `.env` file inside the backend directory.
+Create a `.env` file in the backend directory.
 
 Example:
 
 ```env
-DATABASE_URL=postgresql://user:password@host:port/dbname
+DATABASE_URL=postgresql://user:password@host:port/database
 
-JWT_SECRET_KEY=your_super_secret_key_here
+JWT_SECRET_KEY=your_super_secret_key
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 MODERATOR_USERNAME=admin
-MODERATOR_PASSWORD=secure_password_here
+MODERATOR_PASSWORD=your_secure_password
 ```
 
-### Environment Variable Description
+### Important
 
-| Variable                      | Purpose                               |
-| ----------------------------- | ------------------------------------- |
-| `DATABASE_URL`                | PostgreSQL database connection string |
-| `JWT_SECRET_KEY`              | Secret used to sign JWT tokens        |
-| `JWT_ALGORITHM`               | JWT signing algorithm                 |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT expiration time                   |
-| `MODERATOR_USERNAME`          | Initial moderator username            |
-| `MODERATOR_PASSWORD`          | Initial moderator password            |
-
-> **Security:** Never commit `.env` or real credentials, passwords, JWT secrets, or database credentials to GitHub.
+Never commit the real `.env` file or real credentials to GitHub.
 
 Add the following to `.gitignore`:
 
@@ -211,14 +213,14 @@ __pycache__/
 
 # Installation
 
-Clone the repository:
+## 1. Clone the repository
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone <your-github-repository-url>
 cd WhistleDrop/backend
 ```
 
-## 1. Create the virtual environment
+## 2. Create a virtual environment
 
 ### Windows
 
@@ -232,13 +234,15 @@ Activate it:
 .\venv\Scripts\Activate.ps1
 ```
 
-After activation, your terminal should show:
+You should then see:
 
 ```text
 (venv)
 ```
 
-### macOS / Linux
+at the beginning of your terminal prompt.
+
+### macOS/Linux
 
 ```bash
 python3 -m venv venv
@@ -247,7 +251,7 @@ source venv/bin/activate
 
 ---
 
-## 2. Install dependencies
+## 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -255,19 +259,13 @@ pip install -r requirements.txt
 
 ---
 
-## 3. Configure the database
+## 4. Configure environment variables
 
-Add your PostgreSQL/Supabase connection string to `.env`:
-
-```env
-DATABASE_URL=postgresql://...
-```
-
-The application normalizes supported PostgreSQL connection-string formats for SQLAlchemy compatibility.
+Create `.env` and provide the required database and authentication configuration.
 
 ---
 
-## 4. Run database migrations
+## 5. Run database migrations
 
 ```bash
 alembic upgrade head
@@ -277,7 +275,7 @@ This creates the required database tables.
 
 ---
 
-## 5. Create the initial moderator
+## 6. Create the initial moderator
 
 Run:
 
@@ -285,17 +283,19 @@ Run:
 python seed_moderator.py
 ```
 
-The script creates the initial moderator account using the configured moderator credentials.
+The moderator credentials are taken from the environment variables.
 
 ---
 
-## 6. Start the server
+# Running the Backend
+
+Start the FastAPI server:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The backend will run at:
+The backend will be available at:
 
 ```text
 http://127.0.0.1:8000
@@ -305,7 +305,7 @@ http://127.0.0.1:8000
 
 # API Documentation
 
-Once the server is running:
+FastAPI automatically provides interactive API documentation.
 
 ### Swagger UI
 
@@ -319,10 +319,30 @@ http://127.0.0.1:8000/docs
 http://127.0.0.1:8000/redoc
 ```
 
-### OpenAPI Specification
+### OpenAPI specification
 
 ```text
 http://127.0.0.1:8000/openapi.json
+```
+
+These interfaces are used for **API documentation and testing**. They are not a separate frontend application.
+
+---
+
+# Health Check
+
+The backend provides:
+
+```http
+GET /health
+```
+
+Example response:
+
+```json
+{
+  "status": "ok"
+}
 ```
 
 ---
@@ -331,15 +351,13 @@ http://127.0.0.1:8000/openapi.json
 
 ## Public Endpoints
 
-These endpoints do not require authentication.
+These endpoints do not require moderator authentication.
 
-### Create Report
+### Submit a Report
 
 ```http
 POST /reports
 ```
-
-Creates a new anonymous report.
 
 Example request:
 
@@ -351,35 +369,29 @@ Example request:
 }
 ```
 
+The API generates a secure case code.
+
 Example response:
 
 ```json
 {
-  "case_code": "2O1rw4_GiTXAIa7Lza-udEr4FCHO9ko5",
+  "case_code": "EXAMPLE_CASE_CODE",
   "status": "SUBMITTED"
 }
 ```
 
-### Important
+The actual case code generated by the system will be different for every report.
 
-The returned `case_code` should be saved by the whistleblower.
-
-The plaintext case code is not stored in the database and should be treated as the credential required to track the report.
-
----
-
-## Track Report
+### Track a Report
 
 ```http
 GET /reports/track/{case_code}
 ```
 
-Tracks an anonymous report using the plaintext case code.
-
 Example:
 
-```http
-GET /reports/track/2O1rw4_GiTXAIa7Lza-udEr4FCHO9ko5
+```text
+GET /reports/track/EXAMPLE_CASE_CODE
 ```
 
 Example response:
@@ -404,19 +416,19 @@ Example response:
 }
 ```
 
-If the case code is invalid or unknown, the API returns a generic `404 Not Found`.
+An invalid or unknown case code returns a generic:
 
----
-
-# Moderator API
-
-Moderator endpoints require:
-
-```http
-Authorization: Bearer <JWT_ACCESS_TOKEN>
+```text
+404 Not Found
 ```
 
+response.
+
 ---
+
+# Moderator Endpoints
+
+All moderator report-management endpoints require a valid JWT access token.
 
 ## Moderator Login
 
@@ -424,21 +436,28 @@ Authorization: Bearer <JWT_ACCESS_TOKEN>
 POST /moderator/login
 ```
 
-Authenticates a moderator and returns a JWT access token.
-
 Example request:
 
 ```json
 {
   "username": "admin",
-  "password": "secure_password_here"
+  "password": "your_password"
 }
 ```
 
-The returned access token can be supplied to protected endpoints using:
+Example response:
 
-```http
-Authorization: Bearer <token>
+```json
+{
+  "access_token": "YOUR_ACCESS_TOKEN",
+  "token_type": "bearer"
+}
+```
+
+Use the returned token with:
+
+```text
+Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 ---
@@ -449,9 +468,7 @@ Authorization: Bearer <token>
 GET /moderator/reports
 ```
 
-Returns reports available to the authenticated moderator.
-
-Supported query parameters include:
+Optional query parameters include:
 
 ```text
 status
@@ -463,7 +480,7 @@ page_size
 
 Example:
 
-```http
+```text
 GET /moderator/reports?status=SUBMITTED&page=1&page_size=20
 ```
 
@@ -475,15 +492,16 @@ GET /moderator/reports?status=SUBMITTED&page=1&page_size=20
 GET /moderator/reports/{report_id}
 ```
 
-Returns detailed information about a report, including its status history.
+This returns:
 
-Example:
-
-```http
-GET /moderator/reports/996c7514-a49d-4c36-afca-0a9d0a7e564a
-```
-
-The `report_id` is the internal PostgreSQL UUID.
+* Report UUID
+* Category
+* Description
+* Evidence URL
+* Current status
+* Creation time
+* Last update time
+* Complete status update history
 
 ---
 
@@ -492,8 +510,6 @@ The `report_id` is the internal PostgreSQL UUID.
 ```http
 PATCH /moderator/reports/{report_id}/status
 ```
-
-Updates the status according to the allowed state transitions.
 
 Example:
 
@@ -504,16 +520,14 @@ Example:
 }
 ```
 
-Allowed workflow:
+Valid workflow transitions include:
 
 ```text
 SUBMITTED → UNDER_REVIEW
 
 UNDER_REVIEW → RESOLVED
-UNDER_REVIEW → DISMISSED
 
-RESOLVED → CLOSED
-DISMISSED → CLOSED
+UNDER_REVIEW → DISMISSED
 ```
 
 Invalid transitions are rejected by the backend.
@@ -526,7 +540,7 @@ Invalid transitions are rejected by the backend.
 PATCH /moderator/reports/{report_id}/close
 ```
 
-A report can only be permanently closed after reaching:
+A report can only be closed after reaching:
 
 ```text
 RESOLVED
@@ -552,15 +566,15 @@ After closing:
 CLOSED
 ```
 
-The report cannot be modified or reopened.
+the report becomes immutable.
 
-Attempts to modify a closed report return:
+Any later modification attempt returns:
 
-```http
+```text
 409 Conflict
 ```
 
-Example:
+with:
 
 ```json
 {
@@ -572,56 +586,90 @@ Example:
 
 # Security Design
 
-## 1. No Reporter Identity Storage
+## 1. No Reporter Account
 
-The reporting system does not require reporter accounts.
+The reporting workflow does not require a reporter account.
 
-The report model does not associate reports with:
+The report model does not require:
 
-* Email addresses
-* User accounts
-* IP addresses
-* Browser fingerprints
-
-This supports anonymous reporting.
+* Username
+* Email address
+* Reporter account
+* Password
 
 ---
 
-## 2. Hashed Case Codes
+## 2. Case Code Hashing
 
-Case codes are generated randomly and are intended to be shown to the whistleblower.
+A random case code is generated when a report is submitted.
 
-Only the SHA-256 digest is stored in the database.
+The plaintext case code is returned to the reporter but is not stored directly in the database.
 
-Conceptually:
+Instead, the backend stores a SHA-256 hash:
 
 ```text
-Plaintext Case Code
-        |
-        v
+plaintext case code
+        │
+        ▼
      SHA-256
-        |
-        v
-Database Hash
+        │
+        ▼
+ case_code_hash
 ```
 
-During tracking:
-
-```text
-User Case Code
-      |
-      v
-    SHA-256
-      |
-      v
-Compare with stored hash
-```
+The database therefore does not contain the plaintext tracking code.
 
 ---
 
-## 3. UUID Report IDs
+## 3. Anti-Enumeration Protection
 
-Reports use UUID primary keys instead of sequential integer IDs.
+When tracking a report:
+
+```text
+case code
+    ↓
+SHA-256 hash
+    ↓
+database lookup
+```
+
+If the hash does not match an existing report, the API returns a generic `404 Not Found`.
+
+This prevents the tracking endpoint from revealing whether a particular case code exists.
+
+---
+
+## 4. Rate Limiting
+
+The API uses SlowAPI for rate limiting.
+
+Rate limits are applied to sensitive endpoints to reduce brute-force and abuse attempts.
+
+---
+
+## 5. JWT Authentication
+
+Moderator endpoints are protected using JWT authentication.
+
+A valid token must be supplied using:
+
+```http
+Authorization: Bearer <token>
+```
+
+The token is issued only after successful moderator authentication.
+
+---
+
+## 6. Password Hashing
+
+Moderator passwords are stored using bcrypt hashing rather than plaintext passwords.
+
+---
+
+## 7. UUID Report IDs
+
+Reports use UUID primary keys rather than sequential integer IDs.
 
 Example:
 
@@ -629,47 +677,7 @@ Example:
 996c7514-a49d-4c36-afca-0a9d0a7e564a
 ```
 
-This avoids simple sequential ID enumeration.
-
----
-
-## 4. JWT Authentication
-
-Moderator endpoints require a valid JWT access token.
-
-Example:
-
-```http
-Authorization: Bearer eyJhbGciOi...
-```
-
-Expired or invalid tokens are rejected.
-
----
-
-## 5. Password Hashing
-
-Moderator passwords are stored using bcrypt hashing rather than plaintext passwords.
-
----
-
-## 6. Timing-Attack Mitigation
-
-Moderator authentication performs password-hash verification even when a supplied username does not exist.
-
-This helps reduce timing differences that could otherwise assist username enumeration.
-
----
-
-## 7. Rate Limiting
-
-Sensitive endpoints use `slowapi` rate limiting.
-
-This helps reduce:
-
-* Brute-force login attempts
-* Case-code guessing
-* Excessive API requests
+This avoids exposing simple sequential report identifiers.
 
 ---
 
@@ -689,7 +697,9 @@ Content-Security-Policy
 
 # Database Model
 
-The main report model contains information such as:
+## Reports
+
+The `reports` table contains information such as:
 
 ```text
 id
@@ -702,17 +712,23 @@ created_at
 updated_at
 ```
 
-Status history is stored separately and linked to the report.
+The report status uses the following values:
 
 ```text
-Report
-  |
-  +── StatusUpdate
-  +── StatusUpdate
-  +── StatusUpdate
+SUBMITTED
+UNDER_REVIEW
+RESOLVED
+DISMISSED
+CLOSED
 ```
 
-Each status update contains:
+---
+
+## Status Updates
+
+The `status_updates` table stores the history of report status changes.
+
+Each update contains:
 
 ```text
 id
@@ -722,212 +738,201 @@ note
 created_at
 ```
 
----
-
-# Report State Machine
-
-The report lifecycle is intentionally restricted.
-
-```text
-                 ┌──────────────┐
-                 │   SUBMITTED  │
-                 └──────┬───────┘
-                        │
-                        v
-                 ┌──────────────┐
-                 │ UNDER_REVIEW │
-                 └──────┬───────┘
-                        │
-                 ┌──────┴──────┐
-                 │             │
-                 v             v
-          ┌───────────┐  ┌───────────┐
-          │ RESOLVED  │  │ DISMISSED │
-          └─────┬─────┘  └─────┬─────┘
-                │               │
-                └───────┬───────┘
-                        v
-                 ┌──────────────┐
-                 │    CLOSED    │
-                 └──────────────┘
-```
-
-Once the state becomes:
-
-```text
-CLOSED
-```
-
-the backend rejects further modifications.
+This allows moderators and reporters to see the progression of a report without exposing the reporter's identity.
 
 ---
 
-# Error Handling
+# Verified API Lifecycle
 
-The API uses appropriate HTTP status codes.
+The core backend lifecycle has been tested successfully.
 
-Examples:
+### 1. Anonymous report creation
 
-| Status | Meaning                                           |
-| ------ | ------------------------------------------------- |
-| `200`  | Successful request                                |
-| `201`  | Report successfully created                       |
-| `401`  | Authentication failed or token is invalid         |
-| `404`  | Resource not found / invalid tracking code        |
-| `409`  | Operation conflicts with the current report state |
-| `422`  | Validation error or invalid status transition     |
-| `500`  | Internal server error                             |
+A report was successfully created and assigned a case code.
 
-For tracking, invalid case codes intentionally return a generic `404` response to avoid revealing whether a case code exists.
+### 2. Case-code tracking
 
----
+The generated case code successfully returned the report's current status and history.
 
-# Testing the Backend
+### 3. Invalid case-code handling
 
-After starting the server, open:
+Invalid/unknown case codes return a generic `404 Not Found`.
 
-```text
-http://127.0.0.1:8000/docs
-```
+### 4. Moderator authentication
 
-The Swagger interface can be used to test all API endpoints.
+Moderator login successfully generated JWT access tokens.
 
-A typical verification flow is:
+### 5. Moderator report retrieval
 
-```text
-1. Create anonymous report
-        ↓
-2. Save returned case_code
-        ↓
-3. Track report using case_code
-        ↓
-4. Login as moderator
-        ↓
-5. Obtain JWT access token
-        ↓
-6. Authorize Swagger using Bearer token
-        ↓
-7. List reports
-        ↓
-8. Retrieve report details
-        ↓
-9. SUBMITTED → UNDER_REVIEW
-        ↓
-10. UNDER_REVIEW → RESOLVED/DISMISSED
-        ↓
-11. RESOLVED/DISMISSED → CLOSED
-        ↓
-12. Verify CLOSED report cannot be modified
-```
+Authenticated moderators successfully retrieved reports using their UUID.
 
----
+### 6. Status transition
 
-# Verified Backend Functionality
-
-The following core functionality has been tested during development:
-
-* PostgreSQL/Supabase database connectivity
-* Database migrations
-* Anonymous report creation
-* Secure case-code generation
-* Case-code hashing
-* Anonymous report tracking
-* Generic response for invalid tracking codes
-* Moderator account provisioning
-* Moderator JWT authentication
-* Protected moderator endpoints
-* Report listing
-* Report detail retrieval
-* Status transitions
-* Status history recording
-* Report resolution
-* Permanent report closure
-* Protection against modification of closed reports
-* API security headers
-* Rate limiting
-
-Example verified lifecycle:
+The following transition was successfully tested:
 
 ```text
 SUBMITTED
-    ↓
+     ↓
 UNDER_REVIEW
-    ↓
+```
+
+### 7. Resolution
+
+The following transition was successfully tested:
+
+```text
+UNDER_REVIEW
+     ↓
 RESOLVED
-    ↓
+```
+
+### 8. Permanent closure
+
+The following transition was successfully tested:
+
+```text
+RESOLVED
+     ↓
 CLOSED
 ```
 
-A subsequent modification attempt after `CLOSED` is rejected with:
+### 9. Closed-report protection
 
-```http
+An attempt to modify a closed report correctly returned:
+
+```text
 409 Conflict
 ```
 
+confirming that closed reports cannot be reopened or modified.
+
 ---
 
-# Running the Backend Again
+# Example Complete Lifecycle
 
-When returning to the project:
-
-```powershell
-cd C:\Users\Dell\OneDrive\Desktop\WhistleDrop\backend
+```text
+Anonymous Reporter
+       │
+       │ POST /reports
+       ▼
+    SUBMITTED
+       │
+       │ Moderator authentication
+       ▼
+  UNDER_REVIEW
+       │
+       ├───────────────┐
+       ▼               ▼
+   RESOLVED         DISMISSED
+       │               │
+       └───────┬───────┘
+               ▼
+             CLOSED
+               │
+               ▼
+       Permanently Locked
 ```
 
+The reporter can independently track the report throughout the process using the case code.
+
+---
+
+# Important Security Notes
+
+### Never commit secrets
+
+Do not commit:
+
+```text
+.env
+JWT secrets
+Database passwords
+Moderator passwords
+Access tokens
+```
+
+### Never publish real case codes
+
+Case codes provide access to anonymous report tracking. Treat them as confidential credentials.
+
+### Never publish real database credentials
+
+Use environment variables for database configuration.
+
+---
+
+# Development Commands
+
 Activate the virtual environment:
+
+### Windows PowerShell
 
 ```powershell
 .\venv\Scripts\Activate.ps1
 ```
 
-Start the server:
+Install dependencies:
+
+```powershell
+pip install -r requirements.txt
+```
+
+Run migrations:
+
+```powershell
+alembic upgrade head
+```
+
+Seed the moderator:
+
+```powershell
+python seed_moderator.py
+```
+
+Start the backend:
 
 ```powershell
 uvicorn app.main:app --reload
 ```
 
-Then open:
+Stop the server:
 
 ```text
-http://127.0.0.1:8000/docs
+CTRL + C
 ```
 
 ---
 
-# Development Notes
+# Project Status
 
-The project is intentionally focused on the backend API and security requirements.
+The core backend API has been implemented and verified.
 
-There is **no frontend/UI requirement** for this project.
+### Verified
 
-Swagger UI and ReDoc are used only as API documentation and testing interfaces provided by FastAPI.
+* Anonymous report creation
+* Secure case-code generation
+* Case-code hashing
+* Anonymous report tracking
+* Invalid case-code handling
+* Moderator authentication
+* JWT authorization
+* Moderator report listing
+* Moderator report retrieval
+* Status history
+* Status transitions
+* Report resolution
+* Report dismissal workflow
+* Permanent report closure
+* Closed-report immutability
+* Database persistence
+* API security headers
+* Rate limiting
+* Database migrations
 
----
-
-# Security Notes
-
-For production deployment:
-
-* Use a strong randomly generated `JWT_SECRET_KEY`.
-* Never commit `.env` files.
-* Use a secure PostgreSQL connection.
-* Restrict CORS origins instead of allowing all origins.
-* Use HTTPS.
-* Store production secrets using the deployment platform's secret-management system.
-* Use appropriate database permissions.
-* Review rate limits according to expected traffic.
-* Keep Python and dependencies updated.
+The project is intentionally **backend/API-only**. No frontend application is required for the system's intended functionality.
 
 ---
 
 # License
 
-Add the project's chosen license here if applicable.
-
-Example:
-
-```text
-MIT License
-```
-
-If no license has been selected, this section can be removed.
+This project is intended for academic/project development purposes.
