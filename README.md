@@ -12,6 +12,7 @@ The system provides two separate workflows:
 ---
 
 ## Live Production Deployment
+
 * **API Base URL:** https://whistle-drop-ten.vercel.app
 * **Health Check:** https://whistle-drop-ten.vercel.app/health
 * **Interactive Documentation (Swagger):** https://whistle-drop-ten.vercel.app/docs
@@ -165,7 +166,6 @@ WhistleDrop/
 │   ├── alembic/
 │   ├── requirements.txt
 │   ├── seed_moderator.py
-│   ├── .env
 │   └── ...
 │
 └── README.md
@@ -194,11 +194,9 @@ Example:
 
 ```env
 DATABASE_URL=postgresql://user:password@host:port/database
-
 JWT_SECRET_KEY=your_super_secret_key
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
-
 MODERATOR_USERNAME=admin
 MODERATOR_PASSWORD=your_secure_password
 ```
@@ -223,7 +221,7 @@ __pycache__/
 ## 1. Clone the repository
 
 ```bash
-git clone <your-github-repository-url>
+git clone https://github.com/Pratham180910/WhistleDrop.git
 cd WhistleDrop/backend
 ```
 
@@ -531,9 +529,7 @@ Valid workflow transitions include:
 
 ```text
 SUBMITTED → UNDER_REVIEW
-
 UNDER_REVIEW → RESOLVED
-
 UNDER_REVIEW → DISMISSED
 ```
 
@@ -591,6 +587,84 @@ with:
 
 ---
 
+# API Screenshots
+
+The screenshots below document the verified API functionality and deployment.
+
+### Health Check
+
+![Health Check](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Swagger API Documentation
+
+![Swagger API Documentation](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Anonymous Report Submission
+
+![Anonymous Report Submission](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Case Code Tracking
+
+![Case Code Tracking](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Moderator Login
+
+![Moderator Login](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Moderator Report List
+
+![Moderator Report List](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Moderator Report Details
+
+![Moderator Report Details](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Report Status Update
+
+![Report Status Update](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Report Resolution
+
+![Report Resolution](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Permanent Report Closure
+
+![Permanent Report Closure](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Closed Report Modification Protection
+
+![Closed Report Protection](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
+### Vercel Deployment
+
+**Live API:** https://whistle-drop-ten.vercel.app
+
+![Vercel Deployment](PASTE_SCREENSHOT_LINK_HERE)
+
+---
+
 # Security Design
 
 ## 1. No Reporter Account
@@ -621,7 +695,7 @@ plaintext case code
      SHA-256
         │
         ▼
- case_code_hash
+  case_code_hash
 ```
 
 The database therefore does not contain the plaintext tracking code.
@@ -819,24 +893,24 @@ confirming that closed reports cannot be reopened or modified.
 
 ```text
 Anonymous Reporter
-       │
-       │ POST /reports
-       ▼
+        │
+        │ POST /reports
+        ▼
     SUBMITTED
-       │
-       │ Moderator authentication
-       ▼
+        │
+        │ Moderator authentication
+        ▼
   UNDER_REVIEW
-       │
-       ├───────────────┐
-       ▼               ▼
-   RESOLVED         DISMISSED
-       │               │
-       └───────┬───────┘
-               ▼
-             CLOSED
-               │
-               ▼
+        │
+        ├───────────────┐
+        ▼               ▼
+    RESOLVED         DISMISSED
+        │               │
+        └───────┬───────┘
+                ▼
+              CLOSED
+                │
+                ▼
        Permanently Locked
 ```
 
