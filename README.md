@@ -593,7 +593,8 @@ The screenshots below document the verified API functionality and deployment.
 
 ### Health Check
 
-![Health Check](PASTE_SCREENSHOT_LINK_HERE)
+![Health Check](<img width="1917" height="872" alt="heath check whistledrop" src="https://github.com/user-attachments/assets/b74cb31c-d78c-4bea-9375-a8a314fb5aa3" />
+)
 
 ---
 
