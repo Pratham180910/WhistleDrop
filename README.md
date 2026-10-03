@@ -638,7 +638,7 @@ The screenshots below document the verified API functionality and deployment.
 
 ### Moderator Login
 
-<img width="1772" height="910" alt="Moderator Login" src="https://github.com/user-attachments/assets/3e693ecd-c197-4059-9e5a-35fda148cb1a" />
+<img width="1771" height="905" alt="moderator login 2 whistledrop" src="https://github.com/user-attachments/assets/b91da158-5fab-42cd-90ca-30ac3a6bba94" />
 
 ---
 
