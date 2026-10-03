@@ -662,7 +662,7 @@ The screenshots below document the verified API functionality and deployment.
 
 ### Report Resolution
 
-<img width="1776" height="907" alt="Report Resolution" src="https://github.com/user-attachments/assets/af1739b0-90f8-45dc-99b8-7398e185f9f6" />
+<img width="1776" height="907" alt="REPORT RESOLUTION WHUSTLEDROP" src="https://github.com/user-attachments/assets/6fa37a94-2bb5-4ca6-bae4-af739e3da704" />
 
 ---
 
