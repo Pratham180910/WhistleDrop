@@ -593,67 +593,67 @@ The screenshots below document the verified API functionality and deployment.
 
 ### Health Check
 
-![Health Check](<img width="1917" height="872" alt="heath check whistledrop" src="https://github.com/user-attachments/assets/b74cb31c-d78c-4bea-9375-a8a314fb5aa3" />)
+<img width="1917" height="872" alt="Health Check" src="https://github.com/user-attachments/assets/b74cb31c-d78c-4bea-9375-a8a314fb5aa3" />
 
 ---
 
 ### Swagger API Documentation
 
-![Swagger API Documentation]( <img width="1907" height="952" alt="swagger api documentation whistledrop" src="https://github.com/user-attachments/assets/5da93500-bfbe-4a4c-ab47-2c0d58da192f" />)
+<img width="1907" height="952" alt="Swagger API Documentation" src="https://github.com/user-attachments/assets/5da93500-bfbe-4a4c-ab47-2c0d58da192f" />
 
 ---
 
 ### Anonymous Report Submission
 
-![Anonymous Report Submission]( <img width="1772" height="877" alt="anonymous report submission whistledrop" src="https://github.com/user-attachments/assets/4102e659-712a-4a3c-aa64-96dadb214350" />)
+<img width="1772" height="877" alt="Anonymous Report Submission" src="https://github.com/user-attachments/assets/4102e659-712a-4a3c-aa64-96dadb214350" />
 
 ---
 
 ### Case Code Tracking
 
-![Case Code Tracking]( <img width="1772" height="900" alt="Case Code Tracking whistledrop" src="https://github.com/user-attachments/assets/103d338d-7066-40a7-8503-a32d3d9188b9" />)
+<img width="1772" height="900" alt="Case Code Tracking" src="https://github.com/user-attachments/assets/103d338d-7066-40a7-8503-a32d3d9188b9" />
 
 ---
 
 ### Moderator Login
 
-![Moderator Login]( <img width="1772" height="910" alt="moderator login whistledrop" src="https://github.com/user-attachments/assets/3e693ecd-c197-4059-9e5a-35fda148cb1a" />)
+<img width="1772" height="910" alt="Moderator Login" src="https://github.com/user-attachments/assets/3e693ecd-c197-4059-9e5a-35fda148cb1a" />
 
 ---
 
 ### Moderator Report List
 
-![Moderator Report List]( <img width="1771" height="905" alt="moderator report list whistledrop" src="https://github.com/user-attachments/assets/668f2067-eae4-4f5c-b36d-6985f6144181" />)
+<img width="1771" height="905" alt="Moderator Report List" src="https://github.com/user-attachments/assets/668f2067-eae4-4f5c-b36d-6985f6144181" />
 
 ---
 
 ### Moderator Report Details
 
-![Moderator Report Details]( <img width="1891" height="907" alt="moderator report details whistledrop" src="https://github.com/user-attachments/assets/29aadf09-4f88-41fa-bf46-510ec58ba1e3" />)
+<img width="1891" height="907" alt="Moderator Report Details" src="https://github.com/user-attachments/assets/29aadf09-4f88-41fa-bf46-510ec58ba1e3" />
 
 ---
 
 ### Report Status Update
 
-![Report Status Update](<img width="1771" height="907" alt="Report Status Update whistledrop" src="https://github.com/user-attachments/assets/1da2753c-1e85-4c68-99b8-7398e185f9f6" />)
+<img width="1771" height="907" alt="Report Status Update" src="https://github.com/user-attachments/assets/1da2753c-1e85-4c68-99b8-7398e185f9f6" />
 
 ---
 
 ### Report Resolution
 
-![Report Resolution](<img width="1776" height="907" alt="REPORT RESOLUTION WHUSTLEDROP" src="https://github.com/user-attachments/assets/af1739b0-90f8-45dc-bac4-b336c609d9d4" />)
+<img width="1776" height="907" alt="Report Resolution" src="https://github.com/user-attachments/assets/af1739b0-90f8-45dc-bac4-b336c609d9d4" />
 
 ---
 
 ### Permanent Report Closure
 
-![Permanent Report Closure]( <img width="1777" height="910" alt="Permanent report closure whistledrop" src="https://github.com/user-attachments/assets/9ebeece0-4c5e-4565-ba25-8c6870ddc22d" />)
+<img width="1777" height="910" alt="Permanent Report Closure" src="https://github.com/user-attachments/assets/9ebeece0-4c5e-4565-ba25-8c6870ddc22d" />
 
 ---
 
 ### Closed Report Modification Protection
 
-![Closed Report Protection](<img width="1772" height="907" alt="CLOSED REPORT MODIFICATION PROTECTION WHISTLEDROP" src="https://github.com/user-attachments/assets/933abff9-baa7-47e4-a6e9-7d806b56d77d" />)
+<img width="1772" height="907" alt="Closed Report Protection" src="https://github.com/user-attachments/assets/933abff9-baa7-47e4-a6e9-7d806b56d77d" />
 
 ---
 
@@ -661,7 +661,7 @@ The screenshots below document the verified API functionality and deployment.
 
 **Live API:** https://whistle-drop-ten.vercel.app
 
-![Vercel Deployment]( <img width="1892" height="907" alt="VERCEL DEPLOYMENT WHISTLEDROP" src="https://github.com/user-attachments/assets/19fb2095-c46f-41fa-b3b5-b4e39f1e85de" />)
+<img width="1892" height="907" alt="Vercel Deployment" src="https://github.com/user-attachments/assets/19fb2095-c46f-41fa-b3b5-b4e39f1e85de" />
 
 ---
 
