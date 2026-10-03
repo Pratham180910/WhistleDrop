@@ -11,6 +11,13 @@ The system provides two separate workflows:
 
 ---
 
+## Live Production Deployment
+* **API Base URL:** https://whistle-drop-ten.vercel.app
+* **Health Check:** https://whistle-drop-ten.vercel.app/health
+* **Interactive Documentation (Swagger):** https://whistle-drop-ten.vercel.app/docs
+
+---
+
 ## Features
 
 ### Anonymous Reporting
