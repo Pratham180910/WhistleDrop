@@ -19,6 +19,27 @@ The system provides two separate workflows:
 
 ---
 
+## Test Moderator Credentials
+
+The deployed API includes a pre-configured moderator account for testing the protected moderator endpoints.
+
+* **Username:** `Admin123//`
+* **Password:** `admin@@//**`
+
+These credentials are provided specifically for testing the deployed evaluation instance.
+
+Use the credentials with:
+
+```http
+POST /moderator/login
+```
+
+The endpoint returns a JWT access token. Use the returned token as a **Bearer Token** when testing the protected moderator endpoints in Swagger.
+
+> **Note:** These credentials are intended only for evaluation/testing of the deployed demonstration instance. Do not reuse them for a production deployment.
+
+---
+
 ## Features
 
 ### Anonymous Reporting
@@ -641,7 +662,7 @@ The screenshots below document the verified API functionality and deployment.
 
 ### Report Resolution
 
-<img width="1776" height="907" alt="Report Resolution" src="https://github.com/user-attachments/assets/af1739b0-90f8-45dc-bac4-b336c609d9d4" />
+<img width="1776" height="907" alt="Report Resolution" src="https://github.com/user-attachments/assets/af1739b0-90f8-45dc-99b8-7398e185f9f6" />
 
 ---
 
